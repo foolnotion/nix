@@ -1,4 +1,5 @@
-# Edit this configuration file to define what should be installed on
+# Edit thi
+# configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
@@ -44,12 +45,35 @@ in
 	};
 
 	# Use the systemd-boot EFI boot loader.
-	boot.kernelPackages = pkgs.linuxPackages_5_9;
-	boot.kernelModules = [ "zenpower" "msr" "dm_thin_pool" ];
+	boot.kernelPackages = pkgs.linuxPackages_latest;
+	
+	#boot.kernelPackages = let
+        #    linux_5_10_pkg = { fetchurl, buildLinux, modDirVersionArg ? null, ... } @ args:
+        #        buildLinux (args // rec {
+        #            version = "5.10.9";
+
+        #            modDirVersion = if (modDirVersionArg == null) then builtins.replaceStrings ["-"] [".0-"] version else modDirVersionArg;
+
+        #            src = fetchurl {
+        #                url = "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${version}.tar.xz";
+        #                sha256 = "7f733e0dd8bbb6929aae2191cf6b9dc0b0ec1dad77ab3f5d3aad1b7fe96c4751";
+        #            };
+
+        #            kernelPatches = [];
+
+        #            extraMeta.branch = "5.10.9";
+
+        #        } // (args.argsOverride or {}));
+
+        #    linux_5_10 = pkgs.callPackage linux_5_10_pkg{};
+        #in
+        #    pkgs.recurseIntoAttrs (pkgs.linuxPackagesFor linux_5_10);
+
+	boot.kernelModules = [ "msr" "dm_thin_pool" "k10temp" "v4l2loopback" ];
 	boot.loader.systemd-boot.enable = true;
 	boot.loader.efi.canTouchEfiVariables = true;
-	boot.blacklistedKernelModules = [ "radeon" "k10temp" ];
-	boot.extraModulePackages = [ pkgs.linuxPackages_5_9.zenpower ];
+	boot.blacklistedKernelModules = [ "radeon" ];
+	#boot.extraModulePackages = [ pkgs.linuxPackages_latest.v4l2loopback ];
 	boot.kernel.sysctl = {
 	    "kernel.sysrq" = 1;
     	};
@@ -57,6 +81,9 @@ in
 	boot.loader.grub.memtest86.enable = true;
   
 	#powerManagement.cpuFreqGovernor = "schedutil";
+	powerManagement.powerUpCommands = ''
+	    ${pkgs.hdparm}/sbin/hdparm -y /dev/sda
+	'';
 
 	#swapDevices = [
 	#	{
@@ -65,11 +92,6 @@ in
 	#		size = 2048;
 	#	}
 	#];
-
-
-
-
-	# networking.hostName = "nixos"; # Define your hostname.
 
 	# The global useDHCP flag is deprecated, therefore explicitly set to false here.
 	# Per-interface useDHCP will be mandatory in the future, so this generated config
@@ -94,12 +116,14 @@ in
 	#	# Prepend default nixPath values.
 	#	options.nix.nixPath.default ++ 
 	#	# Append our nixpkgs-overlays.
-	#	[ "nixpkgs-overlays=/etc/nixos/overlays/" ]
+	#	[ "nixpkgs-overlays=/home/bogdb/.config/nixpkgs/overlays/" ]
 	#;
 
 	nixpkgs.overlays = [
-		(import /etc/nixos/overlays/overlays.nix)
+		(import /home/bogdb/.config/nixpkgs/overlays/default.nix)
 	];
+
+	nix.systemFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ] ++ [ "gccarch-znver2" ];
 
 
 	# List packages installed in system profile. To search, run:
@@ -108,42 +132,50 @@ in
 		# basic system
 		htop wget mc vim tmux gitFull subversion msr-tools lm_sensors parallel zip p7zip
 		tmate nix-prefetch-scripts tokei bat exa fd pv mbuffer zstd neofetch ntfs3g
-		psmisc linuxPackages.cpupower stress-ng
-		# utils
-		unstable.kitty # terminal
-		unstable.neovim unstable.neovim-qt unstable.gnvim # editor
-		unstable.mupdf
-		unstable.zathura
-		unstable.llpp
-		unstable.qalculate-gtk
-		unstable.miller
-		unstable.tmate
-		unstable.aria
-		unstable.persepolis
-		kitty neovim neovim-qt youtube-dl nomacs mupdf zathura qpdfview llpp xdotool xclip 
-		# productivity
-		unstable.typora
-		unstable.zettlr
-		# desktop-web
-		firefox hexchat thunderbird qbittorrent rtorrent discord teams skypeforlinux signal-desktop wire-desktop 
-		# desktop-media
-		unstable.mpv 
-		unstable.strawberry 
-		unstable.deadbeef
-		unstable.gst_all_1.gst-plugins-good
-		unstable.gst_all_1.gst-plugins-bad
+		psmisc hdparm linuxPackages.cpupower hdparm stress-ng mprime nitrogen
 
-		gimp inkscape calibre
+		#corefreq
+
+		# utils
+		tdrop
+		kitty # terminal
+		neovim neovim-qt 
+		gnvim
+		mupdf
+		zathura
+		llpp
+		qalculate-gtk
+		miller
+		tmate
+		aria
+		persepolis
+		youtube-dl somafm-cli nomacs mupdf zathura qpdfview llpp xdotool xclip 
+		# productivity
+		typora
+		# zettlr
+		# desktop-web
+		chromium firefox hexchat thunderbird qbittorrent rtorrent discord teams skypeforlinux signal-desktop wire-desktop zoom-us 
+		# desktop-media
+		mpv 
+		celluloid # gtk mpv frontend
+		strawberry 
+		deadbeef
+		gst_all_1.gst-plugins-good
+		gst_all_1.gst-plugins-bad
+
+		gimp inkscape
 		# chess
-		unstable.chessx
-		unstable.stockfish
+		chessx
+		stockfish
 		#others
 		unzip figlet transmission
 
 		# desktop-other
 		adwaita-qt # dark theme for qt5
-		numix-gtk-theme numix-cursor-theme numix-icon-theme materia-theme libreoffice-fresh
-		remmina obs-studio 
+		numix-gtk-theme numix-cursor-theme numix-icon-theme materia-theme 
+		#libreoffice-fresh
+		remmina
+		obs-studio
 		xournalpp
 		# latex
 		texlive.combined.scheme-full
@@ -155,13 +187,19 @@ in
 		openvpn
 		networkmanager-openvpn
 		networkmanagerapplet
-		#unstable.protonmail-bridge
-		protonmail-bridge
+		#protonmail-bridge
+		#protonmail-bridge
 		hydroxide # opensource protonmail bridge
+		protonvpn-cli
+		evolutionWithPlugins
+
+		# password management
+		keepassxc
 
 		# flash player
 		# flashplayer-standalone
 
+		volctl
 		alsaTools
 		arandr
 		tint2
@@ -170,6 +208,7 @@ in
 		obconf
 		jgmenu
 		zenmonitor
+		ncdu
 
 		# vaapi video acceleration
 	        libva
@@ -178,18 +217,14 @@ in
 	        vaapiVdpau
 
 		# teamviewer
-		teamviewer
+		# teamviewer
 
 		# tcl/tk
 		tcl
 		tk
 
-		#
+		# needed by coc.vim
 		nodejs
-
-		# steam
-		unstable.steam
-		unstable.lutris
 
 		# troubleshoot
 		memtest86
@@ -208,14 +243,20 @@ in
 		gparted
 
 		# amd
-		unstable.corectrl
+		# corectrl
 
 		# virtualization
-		unstable.virt-manager
+		virt-manager
 		# virt-manager-qt # broken
-		unstable.virt-viewer
-		unstable.looking-glass-client
-		unstable.thin-provisioning-tools
+		virt-viewer
+		looking-glass-client
+		thin-provisioning-tools
+
+		# signing
+		gnupg
+
+		# games (other)
+		lutris
 	];
 
 	fonts.fonts = with unstable; [
@@ -223,16 +264,22 @@ in
 		camingo-code
 		cascadia-code
 		corefonts
+		cozette
 		dina-font
 		fira-code
+		gohufont
 		go-font
 		hack-font
 		hermit
 		ibm-plex
 		jetbrains-mono
+		julia-mono
 		liberation_ttf
 		libertine
 		proggyfonts
+		recursive
+		siji
+		source-code-pro
 		spleen
 		sudo-font
 		tamsyn
@@ -242,6 +289,15 @@ in
 		vistafonts
 	];
 	fonts.fontconfig.allowBitmaps = true;
+
+	# gnupg
+	programs.gnupg.agent.enable = true;
+
+	# steam
+	programs.steam.enable = true;
+
+	# android
+	programs.adb.enable = true;
 
 	# theme
 	# environment.variables.QT_QPA_PLATFORMTHEME = "qt5ct";
@@ -260,11 +316,14 @@ in
 	services.openssh.enable = true;
 	programs.ssh.askPassword = "lxqt-openssh-askpass";
 
+	# enable dconf
+	programs.dconf.enable = true;
+
 	# Open ports in the firewall.
-	# networking.firewall.allowedTCPPorts = [ 8888 ];
-	# networking.firewall.allowedUDPPorts = [ ... ];
+	networking.firewall.allowedTCPPorts = [ 3389 8888 ];
+	networking.firewall.allowedUDPPorts = [ 3389 8888 ]; 
 	# Or disable the firewall altogether.
-	# networking.firewall.enable = false;
+	networking.firewall.enable = true;
 
 	# Enable CUPS to print documents.
 	# services.printing.enable = true;
@@ -274,6 +333,16 @@ in
 	hardware.pulseaudio.enable = true;
 	hardware.pulseaudio.support32Bit = true; #steam
 	hardware.pulseaudio.extraConfig = "unload-module module-suspend-on-idle"; 
+	#
+	# enable pipewire (better sound system)
+	security.rtkit.enable = true;
+	#services.pipewire = {
+	#	enable = true;
+	#	pulse.enable = true;
+	#	alsa.enable = true;
+	#	alsa.support32Bit = true;
+	#};
+
 
 	# Enable the X11 windowing system.
 	services.xserver.enable = true;
@@ -292,9 +361,13 @@ in
 		enable = true;
 		driSupport = true;
 		driSupport32Bit = true; #steam
-		extraPackages32 = with pkgs.pkgsi686Linux; [ libva ]; #steam
+		extraPackages32 = with pkgs.pkgsi686Linux; [ 
+			libva
+			driversi686Linux.amdvlk
+		]; #steam
 		extraPackages = with pkgs; [
 			rocm-opencl-icd
+			rocm-opencl-runtime
 			amdvlk
 		];
 	};
@@ -322,7 +395,6 @@ in
 	services.xserver = {
 		displayManager = {
 			sddm.enable = true;
-			#sddm.theme = "elarun";
 			defaultSession = "lxqt";
 			sessionCommands = "${pkgs.xorg.xmodmap}/bin/xmodmap ${myCustomLayout}";
 		};
@@ -330,9 +402,24 @@ in
 			xterm.enable = false;
 			lxqt.enable = true;
 		};
+		windowManager.i3 = {
+			enable = true;
+			extraPackages = with pkgs; [
+				dmenu #application launcher most people use
+				i3status # gives you the default i3 status bar
+				i3lock #default i3 screen locker
+				i3blocks #if you are planning on using i3blocks over i3status
+				dunst
+				(polybar.override { i3Support = true; })
+			];
+		};
 	};
 	# Team viewer
-	services.teamviewer.enable = true;	
+	# services.teamviewer.enable = true;	
+
+	#
+	services.xrdp.enable = true;
+	services.xrdp.defaultWindowManager = "lxqt-session";
 
 	# virtualisation
 	virtualisation.libvirtd.enable = true;
@@ -343,7 +430,7 @@ in
 	# Define a user account. Don't forget to set a password with ‘passwd’.
 	users.users.bogdb = {
 		isNormalUser = true;
-		extraGroups = [ "wheel" "audio" "video" "networkmanager" "kvm" "libvirtd" "lxd" "docker" ]; # Enable ‘sudo’ for the user.
+		extraGroups = [ "adbusers" "wheel" "audio" "video" "networkmanager" "kvm" "libvirtd" "lxd" "docker" ]; # Enable ‘sudo’ for the user.
 	};
 
 	# This value determines the NixOS release with which your system is to be
