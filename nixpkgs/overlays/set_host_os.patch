@@ -1,0 +1,16 @@
+diff --git a/configure b/configure
+index 43f1401..f9800eb 100755
+--- a/configure
++++ b/configure
+@@ -361,7 +361,10 @@ EOF
+ 
+ # detect host and target OS
+ start_check "target OS"
+-HOST_OS=$(uname -s 2>&1)
++
++if [[ -z "${HOST_OS+set}" ]]; then
++    HOST_OS=$(uname -s 2>&1)
++fi
+ case "$HOST_OS" in
+   Linux|FreeBSD|NetBSD|OpenBSD|DragonFly|BSD/OS|Darwin|SunOS|QNX|GNU|MorphOS|AIX|AmigaOS|Haiku)
+     ;;

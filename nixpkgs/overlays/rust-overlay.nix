@@ -1,0 +1,1 @@
+/home/bogdb/nix/nixpkgs-mozilla/rust-overlay.nix
