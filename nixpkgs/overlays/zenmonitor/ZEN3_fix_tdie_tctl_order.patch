@@ -1,0 +1,26 @@
+From dca836957fac9e625236841c0b21b19703420793 Mon Sep 17 00:00:00 2001
+From: HonsW <HonsW@users.noreply.github.com>
+Date: Sun, 9 Aug 2020 13:41:33 +0200
+Subject: [PATCH] Update zenpower.c
+
+swap value and order of tDie and tCtl to reflect order of zenpower driver and fix https://github.com/ocerman/zenmonitor/issues/28
+---
+ src/ss/zenpower.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/ss/zenpower.c b/src/ss/zenpower.c
+index 2bf762b..cc9a03f 100644
+--- a/src/ss/zenpower.c
++++ b/src/ss/zenpower.c
+@@ -27,8 +27,8 @@ typedef struct
+ } HwmonSensor;
+ 
+ static HwmonSensorType hwmon_stype[] = {
+-  {"CPU Temperature (tCtl)",    "Reported CPU Temperature",                  "temp1_input",  " %6.2f°C", 1000.0},
+-  {"CPU Temperature (tDie)",    "Reported CPU Temperature - offset",         "temp2_input",  " %6.2f°C", 1000.0},
++  {"CPU Temperature (tDie)",    "Reported CPU Temperature - offset",         "temp1_input",  " %6.2f°C", 1000.0},
++  {"CPU Temperature (tCtl)",    "Reported CPU Temperature",                  "temp2_input",  " %6.2f°C", 1000.0},
+   {"CCD1 Temperature",          "Core Complex Die 1 Temperature",            "temp3_input",  " %6.2f°C", 1000.0},
+   {"CCD2 Temperature",          "Core Complex Die 2 Temperature",            "temp4_input",  " %6.2f°C", 1000.0},
+   {"CCD3 Temperature",          "Core Complex Die 3 Temperature",            "temp5_input",  " %6.2f°C", 1000.0},
+

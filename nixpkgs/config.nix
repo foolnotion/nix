@@ -5,7 +5,11 @@
   permittedInsecurePackages = [
     "openssl-1.0.2u"
   ];
+  input-fonts.acceptLicense = true;
 
-  platform.gcc.arch = "znver2";
-  platform.kernelArch = "x86_64";
+  nixpkgs.localSystem = {
+    gcc.arch = "znver2";
+    gcc.tune = "znver2";
+    system = "x86_64-linux";
+  };
 }

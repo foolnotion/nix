@@ -6,13 +6,13 @@
 }:
 stdenv.mkDerivation rec {
   pname = "corefreq";
-  version = "1.83";
+  version = "1.85";
 
   src = fetchFromGitHub {
     repo = "CoreFreq";
     owner = "cyring";
     rev = "${version}";
-    sha256 = "080yyjlva7ldkxyydn0gzxkkmxnqdd6961vf684slbk4jnaxp6m3";
+    sha256 = "sha256-883XLgZF34WXlui1j1uug9rREeVOfG1x/z+NaKfQFgc=";
   };
 
   nativeBuildInputs = kernel.moduleBuildDependencies;
@@ -21,13 +21,13 @@ stdenv.mkDerivation rec {
 
   buildPhase = ''
     export KERNELDIR="${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
+    export PREFIX="$out"
     make
     '';
 
   installPhase = ''
     export KERNELDIR="${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
-    export PREFIX="$out"
-    make install
+    make install DESTDIR=$out
     '';
 
   meta = with lib; {
