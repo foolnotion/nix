@@ -35,19 +35,30 @@
     home.packages = with pkgs; [
         # utilities
         alacritty
+        bat
+        chessx
+        datamash
+        exa
+        fd
+        flac
+        flacon
         gh
         gitui
+        gnome.gnome-dictionary
         gsimplecal
+        kitty
         lazygit
+        mac
         miller
         ncdu
         neovide
         neovim-qt
         pcmanfm-qt
         qalculate-gtk
-        sakura
         tilix
+        scid-vs-pc
         somafm-cli
+        stockfish
         xarchiver
         zenmonitor
 
@@ -104,6 +115,15 @@
       };
     };
 
+    programs.vscode = {
+        enable = true;
+        package = pkgs.vscode;
+        extensions = with pkgs.vscode-extensions; [
+          xaver.clang-format
+          ms-vscode.cpptools
+        ];
+    };
+
     programs.neovim = {
       enable = true;
 
@@ -112,15 +132,19 @@
 
       plugins = with pkgs.vimPlugins; [
         { plugin = awesome-vim-colorschemes; }
-        { plugin = coc-clangd; }
-        { plugin = coc-fzf; }
-        { plugin = coc-nvim; }
-        { plugin = coc-vimlsp; }
+        #{ plugin = coc-clangd; }
+        #{ plugin = coc-fzf; }
+        #{ plugin = coc-nvim; }
+        #{ plugin = coc-vimlsp; }
+        { plugin = nvim-lspconfig; }
+        { plugin = nvim-treesitter; }
+        { plugin = completion-nvim; }
+        { plugin = lualine-nvim; }
         { plugin = fzf-vim; }
         { plugin = lazygit-nvim; }
         { plugin = nerdtree; }
         { plugin = nvim-base16; }
-        { plugin = vim-lsp-cxx-highlight; }
+        #{ plugin = vim-lsp-cxx-highlight; }
         { plugin = vim-nix; }
         { plugin = vim-pandoc-syntax; }
         { plugin = vim-pandoc; }
@@ -128,32 +152,10 @@
       ];
 
       extraConfig = ''
-          set nocompatible
-          set mouse=a
-          set clipboard+=unnamedplus
-          " Paste with <Shift> + <Insert>
-          imap <S-Insert> <C-R>*
-          set linespace=1
-          filetype on
-          set sw=4
-          set ts=4
-
-          set encoding=utf-8
-          set backspace=indent,eol,start " allow backspacing over everything in insert mode
-          set linespace=1
-          set expandtab
-          set nu
-          set autoindent
-          set ruler
-          set showcmd
-          set incsearch
-          set wrap linebreak nolist
-
-          map <F2> :w!<CR>
-          map <F3> :NERDTreeToggle<CR>
-          map <F4> :bdelete<CR>
-          map <F5> :bprevious<CR>
-          map <F6> :bnext<CR>
+          if !exists("homemanagerbug")
+            let homemanagerbug = "yes"
+            luafile /home/bogdb/.config/nvim/init.lua
+          endif
       '';
     };
 

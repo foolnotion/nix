@@ -1,5 +1,4 @@
-# Edit thi
-# configuration file to define what should be installed on
+# Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
@@ -7,10 +6,17 @@
 
 
 let 
-	unstable = import <nixos-unstable> { config = { allowUnfree = true; }; };
+        #unstable = import <nixos> { 
+	#	config = { 
+	#		allowUnfree = true;
+	#		input-fonts.acceptLicense = true;
+	#	}; 
+	#};
 	myCustomLayout = pkgs.writeText "xkb-layout" ''
 		! Map umlauts to RIGHT ALT + <key>
+        clear mod1
 		keycode 108 = Mode_switch
+        keycode 64 = Super_L
 
 		keysym e = e E EuroSign
 		keysym c = c C cent
@@ -22,8 +28,9 @@ let
 		keysym q = q Q acircumflex Acircumflex
 		keysym a = a A abreve Abreve
 		keysym s = s S U0219 U0218
-                keysym t = t T U021B U021A
+        keysym t = t T U021B U021A
 		keysym i = i I U00EE U00CE
+
 
 		! disable capslock
 		! remove Lock = Caps_Lock
@@ -35,54 +42,69 @@ in
 		./hardware-configuration.nix
 		];
 
-	nixpkgs.config = { 
-		allowUnfree = true;
-		packageOverrides = pkgs: {
-			nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
-				inherit pkgs;
+	nixpkgs = {
+		config = { 
+			allowUnfree = true;
+
+			packageOverrides = pkgs: {
+				nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+					inherit pkgs;
+				};
 			};
+			permittedInsecurePackages = [ "ffmpeg-3.4.8" ];
 		};
+		# most of the time this causes build failures
+		#localSystem = {
+		#	gcc.arch = "znver2";
+		#	gcc.tune = "znver2";
+		#	system = "x86_64-linux";
+		#};
 	};
+
+	documentation.info.enable = false;
+
+	#nix.useSandbox = false;
+
+	nix = {
+                #package = pkgs.nixStable;
+                package = pkgs.nixUnstable;
+		extraOptions = ''
+			experimental-features = nix-command flakes
+		'';
+		systemFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ] ++ [ "gccarch-znver2" ];
+	};	
 
 	# Use the systemd-boot EFI boot loader.
 	boot.kernelPackages = pkgs.linuxPackages_latest;
-	
-	#boot.kernelPackages = let
-        #    linux_5_10_pkg = { fetchurl, buildLinux, modDirVersionArg ? null, ... } @ args:
-        #        buildLinux (args // rec {
-        #            version = "5.10.9";
+	boot.initrd.kernelModules = [ "amdgpu" "dm_thin_pool" ];
+	boot.kernelModules = [ "msr" "dm_thin_pool" "v4l2loopback" "zenpower" ];
+	boot.kernelParams = [ "amdgpu.ppfeaturemask=0xffffffff" ];
+	boot.blacklistedKernelModules = [ "radeon" "k10temp" ];
+	boot.extraModulePackages = [ pkgs.linuxPackages_latest.zenpower ];
+	boot.extraModprobeConfig = /* modconf */ ''
+		options usb-storage quirks=174c:55aa:u
+	'';
 
-        #            modDirVersion = if (modDirVersionArg == null) then builtins.replaceStrings ["-"] [".0-"] version else modDirVersionArg;
-
-        #            src = fetchurl {
-        #                url = "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${version}.tar.xz";
-        #                sha256 = "7f733e0dd8bbb6929aae2191cf6b9dc0b0ec1dad77ab3f5d3aad1b7fe96c4751";
-        #            };
-
-        #            kernelPatches = [];
-
-        #            extraMeta.branch = "5.10.9";
-
-        #        } // (args.argsOverride or {}));
-
-        #    linux_5_10 = pkgs.callPackage linux_5_10_pkg{};
-        #in
-        #    pkgs.recurseIntoAttrs (pkgs.linuxPackagesFor linux_5_10);
-
-	boot.kernelModules = [ "msr" "dm_thin_pool" "k10temp" "v4l2loopback" ];
-	boot.loader.systemd-boot.enable = true;
-	boot.loader.efi.canTouchEfiVariables = true;
-	boot.blacklistedKernelModules = [ "radeon" ];
-	#boot.extraModulePackages = [ pkgs.linuxPackages_latest.v4l2loopback ];
 	boot.kernel.sysctl = {
 	    "kernel.sysrq" = 1;
     	};
-	boot.loader.grub.efiSupport = true;
-	boot.loader.grub.memtest86.enable = true;
+
+	boot.loader = {
+		grub = {
+			efiSupport = true;
+			memtest86.enable = true;
+		};
+		efi.canTouchEfiVariables = true;
+		systemd-boot = {
+			enable = true;
+			memtest86.enable = true;
+		};
+	};
   
 	#powerManagement.cpuFreqGovernor = "schedutil";
 	powerManagement.powerUpCommands = ''
 	    ${pkgs.hdparm}/sbin/hdparm -y /dev/sda
+	    ${pkgs.hdparm}/sbin/hdparm -y /dev/sdb
 	'';
 
 	#swapDevices = [
@@ -106,109 +128,76 @@ in
 	# Select internationalisation properties.
 	console.keyMap = "us";
 	console.font   = "Lat2-Terminus16";
-	i18n.defaultLocale = "en_US.UTF-8";
+
+	i18n = {
+		defaultLocale = "en_US.UTF-8";
+
+		extraLocaleSettings = {
+			LC_TIME = "en_GB.UTF-8";
+		};
+	};
 
 	# Set your time zone.
 	time.timeZone = "Europe/Vienna";
 	time.hardwareClockInLocalTime = true;
 
-	#nix.nixPath =
-	#	# Prepend default nixPath values.
-	#	options.nix.nixPath.default ++ 
-	#	# Append our nixpkgs-overlays.
-	#	[ "nixpkgs-overlays=/home/bogdb/.config/nixpkgs/overlays/" ]
-	#;
-
-	nixpkgs.overlays = [
-		(import /home/bogdb/.config/nixpkgs/overlays/default.nix)
-	];
-
-	nix.systemFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ] ++ [ "gccarch-znver2" ];
-
+	nixpkgs = {
+		overlays = [ (import /home/bogdb/.config/nixpkgs/overlays/default.nix) ];
+	};
 
 	# List packages installed in system profile. To search, run:
 	# $ nix search wget
 	environment.systemPackages = with pkgs; [
 		# basic system
-		htop wget mc vim tmux gitFull subversion msr-tools lm_sensors parallel zip p7zip
-		tmate nix-prefetch-scripts tokei bat exa fd pv mbuffer zstd neofetch ntfs3g
-		psmisc hdparm linuxPackages.cpupower hdparm stress-ng mprime nitrogen
-
-		#corefreq
-
-		# utils
-		tdrop
-		kitty # terminal
-		neovim neovim-qt 
-		gnvim
+		htop
+		wget
+		mc
+		vim
+		tmux tmate
+		gitFull
+		subversion
+		msr-tools
+		lm_sensors
+		parallel
+		zip p7zip
+		nix-prefetch-scripts
+		pv
+		mbuffer
+		zstd
+		neofetch
+		ntfs3g
+		psmisc
+		hdparm
+		linuxPackages.cpupower
+		stress-ng
+		mprime
+		nitrogen
 		mupdf
-		zathura
-		llpp
-		qalculate-gtk
-		miller
-		tmate
-		aria
-		persepolis
-		youtube-dl somafm-cli nomacs mupdf zathura qpdfview llpp xdotool xclip 
-		# productivity
-		typora
-		# zettlr
-		# desktop-web
-		chromium firefox hexchat thunderbird qbittorrent rtorrent discord teams skypeforlinux signal-desktop wire-desktop zoom-us 
-		# desktop-media
-		mpv 
-		celluloid # gtk mpv frontend
-		strawberry 
-		deadbeef
-		gst_all_1.gst-plugins-good
-		gst_all_1.gst-plugins-bad
+		st
+		xdotool
+		xclip
 
-		gimp inkscape
-		# chess
-		chessx
-		stockfish
-		#others
-		unzip figlet transmission
+        #corefreq
+		unzip
 
 		# desktop-other
-		adwaita-qt # dark theme for qt5
-		numix-gtk-theme numix-cursor-theme numix-icon-theme materia-theme 
-		#libreoffice-fresh
 		remmina
-		obs-studio
-		xournalpp
+
 		# latex
 		texlive.combined.scheme-full
+		poppler_utils
 		jabref
+		pandoc
+
 		# python
-		python38 
-		(python38.withPackages(ps: with ps; [ pynvim virtualenvwrapper pip ]))
+		python39 
+		(python39.withPackages(ps: with ps; [ virtualenvwrapper pip ]))
 		# proton mail & vpn
 		openvpn
 		networkmanager-openvpn
 		networkmanagerapplet
-		#protonmail-bridge
-		#protonmail-bridge
 		hydroxide # opensource protonmail bridge
-		protonvpn-cli
-		evolutionWithPlugins
-
-		# password management
-		keepassxc
-
-		# flash player
-		# flashplayer-standalone
-
-		volctl
-		alsaTools
-		arandr
-		tint2
-		conky
-		gsimplecal
-		obconf
-		jgmenu
-		zenmonitor
-		ncdu
+		#evolutionWithPlugins
 
 		# vaapi video acceleration
 	        libva
@@ -216,21 +205,12 @@ in
 	        libvdpau-va-gl
 	        vaapiVdpau
 
-		# teamviewer
-		# teamviewer
-
-		# tcl/tk
-		tcl
-		tk
-
 		# needed by coc.vim
-		nodejs
-
-		# troubleshoot
-		memtest86
+		#nodejs
 
 		# xorg utils
 		xorg.xdpyinfo
+        xorg.xhost
 		xsettingsd
 
 		# opencl
@@ -238,6 +218,8 @@ in
 
 		# util
 		nix-du
+		smartmontools
+		corectrl
 
 		# disk
 		gparted
@@ -247,7 +229,6 @@ in
 
 		# virtualization
 		virt-manager
-		# virt-manager-qt # broken
 		virt-viewer
 		looking-glass-client
 		thin-provisioning-tools
@@ -257,16 +238,17 @@ in
 
 		# games (other)
 		lutris
+		mangohud
 	];
 
-	fonts.fonts = with unstable; [
+	fonts.fonts = with pkgs; [
 		#unscii
 		camingo-code
 		cascadia-code
 		corefonts
-		cozette
+                #cozette
 		dina-font
-		fira-code
+		font-awesome_4
 		gohufont
 		go-font
 		hack-font
@@ -276,6 +258,8 @@ in
 		julia-mono
 		liberation_ttf
 		libertine
+		lmodern
+		noto-fonts-emoji
 		proggyfonts
 		recursive
 		siji
@@ -290,34 +274,102 @@ in
 	];
 	fonts.fontconfig.allowBitmaps = true;
 
-	# gnupg
-	programs.gnupg.agent.enable = true;
-
-	# steam
-	programs.steam.enable = true;
-
-	# android
-	programs.adb.enable = true;
-
-	# theme
-	# environment.variables.QT_QPA_PLATFORMTHEME = "qt5ct";
-	# environment.variables.QT_QPA_PLATFORMTHEME = "kvantum";
-
-	# Some programs need SUID wrappers, can be configured further or are
-	# started in user sessions.
-	# programs.mtr.enable = true;
-	# programs.gnupg.agent = { enable = true; enableSSHSupport = true; };
-
+	# neovim
+	environment.variables.EDITOR = "nvim";
+	environment.variables.QT_QPA_PLATFORMTHEME = "qt5ct";
 	# List services that you want to enable:
 	networking.hostName = "jaghut";
 	networking.networkmanager.enable = true;
 
-	# Enable the OpenSSH daemon.
-	services.openssh.enable = true;
-	programs.ssh.askPassword = "lxqt-openssh-askpass";
+	programs = {
+		adb.enable = true;
+		dconf.enable = true;
+		gnupg.agent.enable = true;
+		qt5ct.enable = true;
+		seahorse.enable = true;
+		steam.enable = true;
+        ssh.forwardX11 = true;
+	};
 
-	# enable dconf
-	programs.dconf.enable = true;
+
+	services = {
+		# ssh access
+		openssh.enable = true;
+
+		# smart disk monitoring
+		smartd = {
+			enable = true;
+			autodetect = true;
+			notifications.x11.enable = true;
+		};
+
+		# gnome-keyring needed by many apps to work properly
+		gnome.gnome-keyring.enable = true;
+
+		# x11
+		xserver = {
+			enable = true;
+			layout = "us";
+
+			videoDrivers = [ "amdgpu" ];
+			deviceSection = ''
+				Option "TearFree" "true"
+			'';
+
+			displayManager = {
+                lightdm = {
+                    enable = true;
+                    greeters.mini = {
+                        enable = true;
+                        user = "bogdb";
+                        extraConfig = ''
+                            [greeter]
+                            show-password-label=false
+                            active-monitor=1
+                            [greeter-theme]
+                            background-image = ""
+                        '';
+
+                    };
+                };
+				defaultSession = "xfce+i3";
+				sessionCommands = "${pkgs.xorg.xmodmap}/bin/xmodmap ${myCustomLayout}";
+			};
+
+			desktopManager = {
+				xterm.enable = false;
+				xfce = {
+					enable = true;
+					noDesktop = true;
+					enableXfwm = false;
+				};
+			};
+
+			wacom.enable = true;
+
+			windowManager.i3 = {
+				enable = true;
+				extraPackages = with pkgs; [
+					dmenu #application launcher most people use
+					i3status # gives you the default i3 status bar
+					i3lock #default i3 screen locker
+					i3blocks #if you are planning on using i3blocks over i3status
+					dunst
+					rofi
+					rofi-pass
+					(polybar.override { i3Support = true; })
+					clipmenu
+					udiskie
+				];
+			};
+		};
+
+		# remote desktop
+		xrdp = {
+			enable = true;
+			defaultWindowManager = "i3";
+		};
+	};
 
 	# Open ports in the firewall.
 	networking.firewall.allowedTCPPorts = [ 3389 8888 ];
@@ -330,29 +382,20 @@ in
 
 	# Enable sound.
 	sound.enable = true;
-	hardware.pulseaudio.enable = true;
-	hardware.pulseaudio.support32Bit = true; #steam
-	hardware.pulseaudio.extraConfig = "unload-module module-suspend-on-idle"; 
-	#
-	# enable pipewire (better sound system)
+    #hardware.pulseaudio.enable = true;
+	#hardware.pulseaudio.support32Bit = true; #steam
+	#hardware.pulseaudio.extraConfig = "unload-module module-suspend-on-idle"; 
+
+	# pipewire is supposedly better but still buggy 
 	security.rtkit.enable = true;
-	#services.pipewire = {
-	#	enable = true;
-	#	pulse.enable = true;
-	#	alsa.enable = true;
-	#	alsa.support32Bit = true;
-	#};
-
-
-	# Enable the X11 windowing system.
-	services.xserver.enable = true;
-	services.xserver.layout = "us";
-	services.xserver = { 
-		videoDrivers = [ "amdgpu" ]; 
-		deviceSection = ''
-			Option "TearFree" "true"
-		''; 
+	services.pipewire = {
+		enable = true;
+		pulse.enable = true;
+		alsa.enable = true;
+		alsa.support32Bit = true;
 	};
+
+
 	#services.xserver.xkbOptions = "eurosign:e";
 	#
 
@@ -374,63 +417,18 @@ in
 	hardware.cpu.amd.updateMicrocode = true;
 	hardware.enableRedistributableFirmware = true;
 
-
-
-	# Enable touchpad support.
-	# services.xserver.libinput.enable = true;
-
-	# Enable the KDE Desktop Environment.
-	#services.xserver.desktopManager.plasma5.enable = true;
-	services.xserver.wacom.enable = true;
-	#services.xserver.dpi = 110;
-
-	#services.xserver.desktopManager.lxqt.enable = true;
-	# Enable the gnome-keyring service as many applications (even outside gnome) depend on it
-	services.gnome3.gnome-keyring.enable = true;
-
-	# Enable the Gnome3 Desktop Environment
-	# services.xserver.displayManager.gdm.enable = true;
-	# services.xserver.displayManager.gdm.wayland = false;
-	# services.xserver.desktopManager.gnome3.enable = true;
-	services.xserver = {
-		displayManager = {
-			sddm.enable = true;
-			defaultSession = "lxqt";
-			sessionCommands = "${pkgs.xorg.xmodmap}/bin/xmodmap ${myCustomLayout}";
-		};
-		desktopManager = {
-			xterm.enable = false;
-			lxqt.enable = true;
-		};
-		windowManager.i3 = {
-			enable = true;
-			extraPackages = with pkgs; [
-				dmenu #application launcher most people use
-				i3status # gives you the default i3 status bar
-				i3lock #default i3 screen locker
-				i3blocks #if you are planning on using i3blocks over i3status
-				dunst
-				(polybar.override { i3Support = true; })
-			];
-		};
+	virtualisation = {
+		docker.enable = true;
+		libvirtd.enable = true;
+		lxd.enable = true;
+        lxc.enable = true;
 	};
-	# Team viewer
-	# services.teamviewer.enable = true;	
-
-	#
-	services.xrdp.enable = true;
-	services.xrdp.defaultWindowManager = "lxqt-session";
-
-	# virtualisation
-	virtualisation.libvirtd.enable = true;
-	virtualisation.lxd.enable = true;
 	systemd.services.lxd.path = with pkgs; [ lvm2 thin-provisioning-tools e2fsprogs ];
-	virtualisation.docker.enable = true;
 	
 	# Define a user account. Don't forget to set a password with ‘passwd’.
 	users.users.bogdb = {
 		isNormalUser = true;
-		extraGroups = [ "adbusers" "wheel" "audio" "video" "networkmanager" "kvm" "libvirtd" "lxd" "docker" ]; # Enable ‘sudo’ for the user.
+		extraGroups = [ "adbusers" "disk" "wheel" "audio" "video" "networkmanager" "kvm" "libvirtd" "lxd" "docker" ]; # Enable ‘sudo’ for the user.
 	};
 
 	# This value determines the NixOS release with which your system is to be
