@@ -1,0 +1,9 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =7
+let g:netrw_dirhist_7='/home/bogdb/projects/operon/include/operon/core'
+let g:netrw_dirhist_6='/home/bogdb/projects/operon/include/operon'
+let g:netrw_dirhist_5='/home/bogdb/projects/operon/include/operon/collections'
+let g:netrw_dirhist_4='/home/bogdb/projects/operon/include/operon'
+let g:netrw_dirhist_3='/home/bogdb/projects/operon/include/operon/operators'
+let g:netrw_dirhist_2='/home/bogdb/projects/operon/include/operon/algorithms'
+let g:netrw_dirhist_1='/home/bogdb/projects/operon'

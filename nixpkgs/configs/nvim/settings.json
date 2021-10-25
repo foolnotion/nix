@@ -1,0 +1,8 @@
+{
+    "initializationOptions": {
+        "cache": {
+            "directory": "/tmp/ccls",
+            "useHierarchy": true
+        }
+    }
+}

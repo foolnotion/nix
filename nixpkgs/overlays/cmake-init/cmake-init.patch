@@ -1,0 +1,13 @@
+diff --git a/package/setup.py b/package/setup.py
+index 6891fb6..f205ba9 100644
+--- a/package/setup.py
++++ b/package/setup.py
+@@ -4,7 +4,7 @@ import os
+ import re
+ import shutil
+ 
+-with open("../cmake-init/cmake_init.py") as f:
++with open("./cmake-init/cmake_init.py") as f:
+     for line in f:
+         match = re.match("^__version__ = \"([^\"]+)\"$", line)
+         if match is not None:

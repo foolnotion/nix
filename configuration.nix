@@ -13,33 +13,23 @@ let
 	#	}; 
 	#};
 	myCustomLayout = pkgs.writeText "xkb-layout" ''
-		! Map umlauts to RIGHT ALT + <key>
-        clear mod1
-		keycode 108 = Mode_switch
-        keycode 64 = Super_L
-
 		keysym e = e E EuroSign
 		keysym c = c C cent
 		keysym w = w W adiaeresis Adiaeresis
 		keysym o = o O odiaeresis Odiaeresis
 		keysym u = u U udiaeresis Udiaeresis
 		keysym r = r R ssharp
-		
 		keysym q = q Q acircumflex Acircumflex
 		keysym a = a A abreve Abreve
 		keysym s = s S U0219 U0218
         keysym t = t T U021B U021A
 		keysym i = i I U00EE U00CE
-
-
-		! disable capslock
-		! remove Lock = Caps_Lock
 	'';
 in
 {
 	imports =
 		[ # Include the results of the hardware scan.
-		./hardware-configuration.nix
+          ./hardware-configuration.nix
 		];
 
 	nixpkgs = {
@@ -51,7 +41,7 @@ in
 					inherit pkgs;
 				};
 			};
-			permittedInsecurePackages = [ "ffmpeg-3.4.8" ];
+            #permittedInsecurePackages = [ "ffmpeg-3.4.8" ];
 		};
 		# most of the time this causes build failures
 		#localSystem = {
@@ -67,7 +57,7 @@ in
 
 	nix = {
                 #package = pkgs.nixStable;
-                package = pkgs.nixUnstable;
+        package = pkgs.nixUnstable;
 		extraOptions = ''
 			experimental-features = nix-command flakes
 		'';
@@ -142,7 +132,7 @@ in
 	time.hardwareClockInLocalTime = true;
 
 	nixpkgs = {
-		overlays = [ (import /home/bogdb/.config/nixpkgs/overlays/default.nix) ];
+		overlays = [ (import "/home/bogdb/.config/nixpkgs/overlays/default.nix") ];
 	};
 
 	# List packages installed in system profile. To search, run:
@@ -220,6 +210,7 @@ in
 		nix-du
 		smartmontools
 		corectrl
+        #keyd
 
 		# disk
 		gparted
@@ -253,7 +244,8 @@ in
 		go-font
 		hack-font
 		hermit
-		ibm-plex
+        ibm-plex
+        iosevka
 		jetbrains-mono
 		julia-mono
 		liberation_ttf
@@ -394,7 +386,8 @@ in
 		alsa.enable = true;
 		alsa.support32Bit = true;
 	};
-
+        services.flatpak.enable = true;
+	xdg.portal.enable = true;
 
 	#services.xserver.xkbOptions = "eurosign:e";
 	#
@@ -424,11 +417,12 @@ in
         lxc.enable = true;
 	};
 	systemd.services.lxd.path = with pkgs; [ lvm2 thin-provisioning-tools e2fsprogs ];
+    #systemd.packages = with pkgs; [ keyd ];
 	
 	# Define a user account. Don't forget to set a password with ‘passwd’.
 	users.users.bogdb = {
 		isNormalUser = true;
-		extraGroups = [ "adbusers" "disk" "wheel" "audio" "video" "networkmanager" "kvm" "libvirtd" "lxd" "docker" ]; # Enable ‘sudo’ for the user.
+		extraGroups = [ "adbusers" "disk" "wheel" "audio" "video" "input" "networkmanager" "kvm" "libvirtd" "lxd" "docker" "flatpak" ]; # Enable ‘sudo’ for the user.
 	};
 
 	# This value determines the NixOS release with which your system is to be
